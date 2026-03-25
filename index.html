@@ -52,6 +52,14 @@
   }
   #next-btn:hover { background: #2a5a8c; }
   #loading { color: #1a3a5c; font-weight: 700; font-size: 16px; padding: 40px; text-align: center; }
+  #map-tooltip {
+    position: fixed; pointer-events: none; display: none;
+    background: #1a3a5c; color: #fff; font-family: 'Nunito', sans-serif;
+    font-size: 14px; font-weight: 800; padding: 6px 14px;
+    border-radius: 20px; white-space: nowrap;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+    transform: translate(-50%, -140%);
+  }
 </style>
 </head>
 <body>
@@ -77,6 +85,7 @@
 
 <div id="feedback"></div>
 <div id="map-wrap"><div id="loading">Loading map…</div></div>
+<div id="map-tooltip"></div>
 <button id="next-btn" onclick="nextCountry()">Next Country →</button>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
@@ -203,7 +212,7 @@ async function init() {
     .attr("id", d => "c-" + d.id)
     .attr("data-name", d => EUROPE_COUNTRIES[d.id])
     .on("click", function(event, d) {
-      handleClick(d.id, EUROPE_COUNTRIES[d.id], this);
+      handleClick(d.id, EUROPE_COUNTRIES[d.id], this, event);
     });
 
   europeFeatures.forEach(f => {
@@ -213,7 +222,7 @@ async function init() {
   nextCountry();
 }
 
-function handleClick(id, englishName, el) {
+function handleClick(id, englishName, el, event) {
   if (answered) return;
   attempts++;
   document.getElementById("sa").textContent = attempts;
@@ -235,8 +244,25 @@ function handleClick(id, englishName, el) {
     el.classList.add("wrong-flash");
     setTimeout(() => el.classList.remove("wrong-flash"), 650);
     const msgs = UI[lang].no;
-    setFeedback(msgs[Math.floor(Math.random() * msgs.length)], "no");
+    const displayName = lang === "sv" ? (SV[englishName] || englishName) : englishName;
+    setFeedback(msgs[Math.floor(Math.random() * msgs.length)] + " — that was " + displayName, "no");
+    showTooltip(englishName, event);
+    setTimeout(() => hideTooltip(), 2000);
   }
+}
+
+function showTooltip(englishName, event) {
+  const tip = document.getElementById("map-tooltip");
+  const displayName = lang === "sv" ? (SV[englishName] || englishName) : englishName;
+  const flag = FLAGS[englishName] || "";
+  tip.textContent = flag + " " + displayName;
+  tip.style.display = "block";
+  tip.style.left = event.clientX + "px";
+  tip.style.top = event.clientY + "px";
+}
+
+function hideTooltip() {
+  document.getElementById("map-tooltip").style.display = "none";
 }
 
 function setFeedback(msg, cls) {
